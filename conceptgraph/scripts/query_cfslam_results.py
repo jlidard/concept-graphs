@@ -110,7 +110,7 @@ def main(args):
         scene_graph_geometries = []
         with open(args.edge_file, "r") as f:
             edges = json.load(f)
-
+        
         classes = objects.get_most_common_class()
         colors = [class_colors[str(c)] for c in classes]
         obj_centers = []
@@ -176,18 +176,8 @@ def main(args):
         values, counts = np.unique(obj_classes, return_counts=True)
         obj_class = values[np.argmax(counts)]
         object_classes.append(obj_class)
-    
-    # Set the title of the window
-    vis = o3d.visualization.VisualizerWithKeyCallback()
 
-    if result_path is not None:
-        vis.create_window(window_name=f'Open3D - {os.path.basename(result_path)}', width=1280, height=720)
-    else:
-        vis.create_window(window_name=f'Open3D', width=1280, height=720)
 
-    # Add geometry to the scene
-    for geometry in pcds + bboxes:
-        vis.add_geometry(geometry)
 
     def save_to_pyntcloud():
         from pyntcloud import PyntCloud
@@ -219,150 +209,42 @@ def main(args):
 
     query_to_bbox_dict = {}
 
-    main.show_bg_pcd = True
+    text_query = input("Enter your query: ")
+    text_queries = [text_query]
 
-    def toggle_bg_pcd(vis):
-        if bg_objects is None:
-            print("No background objects found.")
-            return
-        
-        for idx in indices_bg:
-            if main.show_bg_pcd:
-                vis.remove_geometry(pcds[idx], reset_bounding_box=False)
-                vis.remove_geometry(bboxes[idx], reset_bounding_box=False)
-            else:
-                vis.add_geometry(pcds[idx], reset_bounding_box=False)
-                vis.add_geometry(bboxes[idx], reset_bounding_box=False)
-        
-        main.show_bg_pcd = not main.show_bg_pcd
-        
-    main.show_global_pcd = False
-    def toggle_global_pcd(vis):
-        if args.rgb_pcd_path is None:
-            print("No RGB pcd path provided.")
-            return
-        
-        if main.show_global_pcd:
-            vis.remove_geometry(global_pcd, reset_bounding_box=False)
-        else:
-            vis.add_geometry(global_pcd, reset_bounding_box=False)
-        
-        main.show_global_pcd = not main.show_global_pcd
-        
-    main.show_scene_graph = False
-    def toggle_scene_graph(vis):
-        if args.edge_file is None:
-            print("No edge file provided.")
-            return
-        
-        if main.show_scene_graph:
-            for geometry in scene_graph_geometries:
-                vis.remove_geometry(geometry, reset_bounding_box=False)
-        else:
-            for geometry in scene_graph_geometries:
-                vis.add_geometry(geometry, reset_bounding_box=False)
-        
-        main.show_scene_graph = not main.show_scene_graph
-        
-    def color_by_class(vis):
-        for i in range(len(objects)):
-            pcd = pcds[i]
-            obj_class = object_classes[i]
-            pcd.colors = o3d.utility.Vector3dVector(
-                np.tile(
-                    class_colors[str(obj_class)],
-                    (len(pcd.points), 1)
-                )
-            )
+    text_queries_tokenized = clip_tokenizer(text_queries).to("cuda")
+    text_query_ft = clip_model.encode_text(text_queries_tokenized)
+    text_query_ft = text_query_ft / text_query_ft.norm(dim=-1, keepdim=True)
+    text_query_ft = text_query_ft.squeeze()
 
-        for pcd in pcds:
-            vis.update_geometry(pcd)
-            
-    def color_by_rgb(vis):
-        for i in range(len(pcds)):
-            pcd = pcds[i]
-            pcd.colors = objects[i]['pcd'].colors
-        
-        for pcd in pcds:
-            vis.update_geometry(pcd)
-            
-    def color_by_instance(vis):
-        instance_colors = cmap(np.linspace(0, 1, len(pcds)))
-        for i in range(len(pcds)):
-            pcd = pcds[i]
-            pcd.colors = o3d.utility.Vector3dVector(
-                np.tile(
-                    instance_colors[i, :3],
-                    (len(pcd.points), 1)
-                )
-            )
-            
-        for pcd in pcds:
-            vis.update_geometry(pcd)
-        
-    def color_by_clip_sim(vis):
-        if args.no_clip:
-            print("CLIP model is not initialized.")
-            return
+    # similarities = objects.compute_similarities(text_query_ft)
+    objects_clip_fts = objects.get_stacked_values_torch("clip_ft")
+    objects_clip_fts = objects_clip_fts.to("cuda")
+    similarities = F.cosine_similarity(
+        text_query_ft.unsqueeze(0), objects_clip_fts, dim=-1
+    )
+    max_value = similarities.max()
+    min_value = similarities.min()
+    normalized_similarities = (similarities - min_value) / (max_value - min_value)
+    probs = F.softmax(similarities, dim=0)
+    max_prob_idx = torch.argmax(probs)
+    similarity_colors = cmap(normalized_similarities.detach().cpu().numpy())[..., :3]
 
-        text_query = input("Enter your query: ")
-        text_queries = [text_query]
-        
-        text_queries_tokenized = clip_tokenizer(text_queries).to("cuda")
-        text_query_ft = clip_model.encode_text(text_queries_tokenized)
-        text_query_ft = text_query_ft / text_query_ft.norm(dim=-1, keepdim=True)
-        text_query_ft = text_query_ft.squeeze()
-        
-        # similarities = objects.compute_similarities(text_query_ft)
-        objects_clip_fts = objects.get_stacked_values_torch("clip_ft")
-        objects_clip_fts = objects_clip_fts.to("cuda")
-        similarities = F.cosine_similarity(
-            text_query_ft.unsqueeze(0), objects_clip_fts, dim=-1
-        )
-        max_value = similarities.max()
-        min_value = similarities.min()
-        normalized_similarities = (similarities - min_value) / (max_value - min_value)
-        probs = F.softmax(similarities, dim=0)
-        max_prob_idx = torch.argmax(probs)
-        similarity_colors = cmap(normalized_similarities.detach().cpu().numpy())[..., :3]
+    # get the top 5 similar objects and store as a dict from query to list of indices
+    topk_similarities, topk_indices = similarities.topk(5)
+    query_to_obj_bbox = {text_query: [bboxes[i] for i in topk_indices]}
+    query_to_bbox_dict.update(query_to_obj_bbox)
 
-        # get the top 5 similar objects and store as a dict from query to list of indices
-        topk_similarities, topk_indices = similarities.topk(20)
+    save_path = result_path.split('/')[:-2]
+    save_path = os.path.join('/', *save_path[1:], 'queries')
+    os.makedirs(save_path, exist_ok=True)
+    for k, v in query_to_bbox_dict.items():
+        # dump to .pkl file
+        content = [{"rotation": match.R, "center": match.center, "extent": match.extent} for match in v]
+        with open(os.path.join(save_path, k + ".pkl"), "wb") as f: pickle.dump(content, f)
 
-        for i in range(len(objects)):
-            pcd = pcds[i]
-            map_colors = np.asarray(pcd.colors)
+    save_to_pyntcloud()
 
-            pcd.colors = o3d.utility.Vector3dVector(
-                np.tile(
-                    [
-                        similarity_colors[i, 0].item(),
-                        similarity_colors[i, 1].item(),
-                        similarity_colors[i, 2].item()
-                    ],
-                    (len(pcd.points), 1)
-                )
-            )
-
-        for pcd in pcds:
-            vis.update_geometry(pcd)
-            
-    def save_view_params(vis):
-        param = vis.get_view_control().convert_to_pinhole_camera_parameters()
-        o3d.io.write_pinhole_camera_parameters("temp.json", param)
-        
-    vis.register_key_callback(ord("B"), toggle_bg_pcd)
-    vis.register_key_callback(ord("S"), toggle_global_pcd)
-    vis.register_key_callback(ord("C"), color_by_class)
-    vis.register_key_callback(ord("R"), color_by_rgb)
-    vis.register_key_callback(ord("F"), color_by_clip_sim)
-    vis.register_key_callback(ord("I"), color_by_instance)
-    vis.register_key_callback(ord("V"), save_view_params)
-    vis.register_key_callback(ord("G"), toggle_scene_graph)
-    
-    # Render the scene
-    vis.run()
-    
 if __name__ == "__main__":
     parser = get_parser()
     args = parser.parse_args()

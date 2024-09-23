@@ -791,7 +791,149 @@ class RealsenseDataset(GradSLAMDataset):
         embedding = torch.load(embedding_file_path)
         return embedding.permute(0, 2, 3, 1)  # (1, H, W, embedding_dim)
 
+class ZedDataset(GradSLAMDataset):
 
+    def __init__(
+        self,
+        config_dict,
+        basedir,
+        sequence,
+        stride: Optional[int] = None,
+        start: Optional[int] = 0,
+        end: Optional[int] = -1,
+        desired_height: Optional[int] = 480,
+        desired_width: Optional[int] = 640,
+        load_embeddings: Optional[bool] = False,
+        embedding_dir: Optional[str] = "embeddings",
+        embedding_dim: Optional[int] = 512,
+        **kwargs,
+    ):
+        self.input_folder = os.path.join(basedir, sequence)
+        # only poses/images/depth corresponding to the realsense_camera_order are read/used
+        self.pose_path = os.path.join(self.input_folder, 'poses')
+        super().__init__(
+            config_dict,
+            stride=stride,
+            start=start,
+            end=end,
+            desired_height=desired_height,
+            desired_width=desired_width,
+            load_embeddings=load_embeddings,
+            embedding_dir=embedding_dir,
+            embedding_dim=embedding_dim,
+            **kwargs,
+        )
+
+    def get_filepaths(self):
+        color_paths = natsorted(glob.glob(f"{self.input_folder}/results/frame*.jpg"))
+        depth_paths = natsorted(glob.glob(f"{self.input_folder}/results/depth*.npy"))
+        embedding_paths = None
+        if self.load_embeddings:
+            embedding_paths = natsorted(
+                glob.glob(f"{self.input_folder}/{self.embedding_dir}/*.pt")
+            )
+        return color_paths, depth_paths, embedding_paths
+
+    def load_poses(self):
+        posefiles = natsorted(glob.glob(os.path.join(self.pose_path, "*.npy")))
+        poses = []
+        P = torch.tensor(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1]
+            ]
+        ).float()
+        for posefile in posefiles:
+            c2w = torch.from_numpy(np.load(posefile)).float()
+            _R = c2w[:3, :3]
+            _t = c2w[:3, 3]
+            _pose = P @ c2w # @ P
+            poses.append(_pose)
+        return poses
+
+class ZedDatasetPreprocess(GradSLAMDataset):
+
+    def __init__(
+        self,
+        config_dict,
+        basedir,
+        sequence,
+        stride: Optional[int] = None,
+        start: Optional[int] = 0,
+        end: Optional[int] = -1,
+        desired_height: Optional[int] = 480,
+        desired_width: Optional[int] = 640,
+        load_embeddings: Optional[bool] = False,
+        embedding_dir: Optional[str] = "embeddings",
+        embedding_dim: Optional[int] = 512,
+        **kwargs,
+    ):
+        self.input_folder = os.path.join(basedir, sequence)
+        # only poses/images/depth corresponding to the realsense_camera_order are read/used
+        self.pose_path = os.path.join(self.input_folder, 'poses')
+        super().__init__(
+            config_dict,
+            stride=stride,
+            start=start,
+            end=end,
+            desired_height=desired_height,
+            desired_width=desired_width,
+            load_embeddings=load_embeddings,
+            embedding_dir=embedding_dir,
+            embedding_dim=embedding_dim,
+            **kwargs,
+        )
+
+    def get_filepaths(self):
+        color_paths = natsorted(glob.glob(f"{self.input_folder}/results/frame*.jpg"))
+        depth_paths = natsorted(glob.glob(f"{self.input_folder}/results/depth*.npy"))
+        embedding_paths = None
+        if self.load_embeddings:
+            embedding_paths = natsorted(
+                glob.glob(f"{self.input_folder}/{self.embedding_dir}/*.pt")
+            )
+        return color_paths, depth_paths, embedding_paths
+
+    def load_poses(self):
+        # load pose files from json
+        import json
+        import re
+
+
+        # Function to extract the frame number from the file path (e.g., frame_00001.jpg -> 1)
+        def get_frame_number(file_path):
+            match = re.search(r'frame_(\d+)', file_path)
+            return int(match.group(1)) if match else 0
+
+        # Load the JSON file
+        json_file_path = os.path.join(self.input_folder, 'transforms.json')
+        with open(json_file_path, 'r') as f:
+            data = json.load(f)
+
+        # Sort frames by frame number
+        sorted_frames = sorted(data['frames'], key=lambda frame: get_frame_number(frame['file_path']))
+
+        # Extract the list of poses (transform_matrix)
+        poses = [torch.Tensor(frame['transform_matrix']) for frame in sorted_frames]
+        P = torch.tensor(
+            [
+                [1, 0, 0, 0],
+                [0, 0, 1, 0],
+                [0, -1, 0, 0],
+                [0, 0, 0, 1]
+            ]
+        ).float()
+        for i in range(len(poses)):
+            # poses[i] = torch.linalg.inv(P) @ poses[i]
+            poses[i][:3, :3] = torch.eye(3)
+
+        # Display the first pose as an example
+        print('Loaded poses like example:')
+        print(poses[0])
+
+        return poses
 class Record3DDataset(GradSLAMDataset):
     """
     Dataset class to read in saved files from the structure created by our
@@ -1171,6 +1313,10 @@ def get_dataset(dataconfig, basedir, sequence, **kwargs):
         return ICLDataset(config_dict, basedir, sequence, **kwargs)
     elif config_dict["dataset_name"].lower() in ["replica"]:
         return ReplicaDataset(config_dict, basedir, sequence, **kwargs)
+    elif config_dict["dataset_name"].lower() in ["zed2i"]:
+        return ZedDataset(config_dict, basedir, sequence, **kwargs)
+    elif config_dict["dataset_name"].lower() in ["zed2ipre"]:
+        return ZedDatasetPreprocess(config_dict, basedir, sequence, **kwargs)
     elif config_dict["dataset_name"].lower() in ["azure", "azurekinect"]:
         return AzureKinectDataset(config_dict, basedir, sequence, **kwargs)
     elif config_dict["dataset_name"].lower() in ["scannet"]:

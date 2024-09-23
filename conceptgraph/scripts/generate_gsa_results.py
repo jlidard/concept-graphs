@@ -372,7 +372,7 @@ def main(args: argparse.Namespace):
             specified_tags='None'
             # load model
             tagging_model = tag2text.tag2text_caption(pretrained=TAG2TEXT_CHECKPOINT_PATH,
-                                                    image_size=384,
+                                                    image_size=224,
                                                     vit='swin_b',
                                                     delete_tag_index=delete_tag_index)
             # threshold for tagging
@@ -380,14 +380,14 @@ def main(args: argparse.Namespace):
             tagging_model.threshold = 0.64 
         elif args.class_set == "ram":
             tagging_model = ram(pretrained=RAM_CHECKPOINT_PATH,
-                                         image_size=384,
+                                         image_size=224,
                                          vit='swin_l')
             
         tagging_model = tagging_model.eval().to(args.device)
         
         # initialize Tag2Text
         tagging_transform = TS.Compose([
-            TS.Resize((384, 384)),
+            TS.Resize((224,224)),
             TS.ToTensor(), 
             TS.Normalize(mean=[0.485, 0.456, 0.406],
                          std=[0.229, 0.224, 0.225]),

@@ -95,7 +95,8 @@ def main(args: argparse.Namespace):
         pose_np = _pose.cpu().numpy()
 
         _pose = torch.from_numpy(pose_np).to(_pose.device).to(_pose.dtype)
-        
+
+        # breakpoint()
         frame_cur = RGBDImages(
             _color.unsqueeze(0).unsqueeze(0),
             _depth.unsqueeze(0).unsqueeze(0),
@@ -118,11 +119,22 @@ def main(args: argparse.Namespace):
     pcd_file_path = os.path.join(dir_to_save_map, "pointcloud.pcd")
     pcd = pointclouds.open3d(0)
 
+
+
     if args.save_pcd:
         o3d.io.write_point_cloud(pcd_file_path, pcd)  # Saving as PCD
 
     if args.visualize:
-        o3d.visualization.draw_geometries([pcd])
+        # Create a coordinate frame mesh
+        coordinate_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
+
+        # Visualize the coordinate frame
+        # o3d.visualization.draw_geometries([coordinate_frame], window_name="Coordinate Frame")
+
+
+        o3d.visualization.draw_geometries([pcd, coordinate_frame])
+
+
 
 
 if __name__ == "__main__":
