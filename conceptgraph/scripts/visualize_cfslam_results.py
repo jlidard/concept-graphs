@@ -192,27 +192,39 @@ def main(args):
     def save_to_pyntcloud():
         from pyntcloud import PyntCloud
 
+        P = np.array(
+            [
+                [1, 0, 0, 0],
+                [0, -1, 0, 0],
+                [0, 0, -1, 0],
+                [0, 0, 0, 1]
+            ], dtype=np.float64
+        )
+
         scene_id = result_path.split('/')[-3]
 
         # Assuming 'point_cloud' is your PointCloud object
+        [p.transform(P) for p in pcds]
         # Extract XYZ points
         xyz = np.concatenate([pcds[i].points for i in range(len(pcds)) if i not in indices_bg])
 
         # Extract RGB colors (if available)
         rgb = np.concatenate([pcds[i].colors for i in range(len(pcds)) if i not in indices_bg])
-
+        rgb = rgb * 255
+        rgb = rgb.astype(np.uint8)
         # Concatenate XYZ and RGB into a single array
         # RGB values should be scaled to 0-255 if needed
-        features = np.hstack((xyz, rgb))
 
         # Create a DataFrame for PyntCloud
-        df = pd.DataFrame(features, columns=['x', 'y', 'z', 'r', 'g', 'b'])
+        df1 = pd.DataFrame(xyz, columns=['x', 'y', 'z'])
+        df2 = pd.DataFrame(rgb, columns=['red', 'green', 'blue'])
+        df = pd.concat((df1, df2), axis=1)
 
         # Convert to PyntCloud object
         pyntcloud = PyntCloud(df)
 
         # Save the point cloud as a .ply file
-        pyntcloud.to_file(os.path.join('/home/jlidard/predictive_brickwork/tests/perception', f"{scene_id}.ply"))
+        pyntcloud.to_file(os.path.join('/home/pbrick/zed2i/241014_ECL_500_5_0.05_20_1/ptcloud', f"{scene_id}.ply"))
 
     if args.save_pynt == 1:
         save_to_pyntcloud()
