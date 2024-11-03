@@ -1,11 +1,11 @@
 # On the ConceptGraphs-Detect
-SCENE_NAME=lab6
+SCENE_NAME=lab7
 THRESHOLD=1.2
 
 python slam/cfslam_pipeline_batch.py \
     dataset_root=$ZED_ROOT \
     dataset_config=$ZED_CONFIG_PATH \
-    stride=2 \
+    stride=5 \
     scene_id=$SCENE_NAME \
     spatial_sim_type=overlap \
     mask_conf_threshold=0.10 \
@@ -24,6 +24,7 @@ python slam/cfslam_pipeline_batch.py \
     min_points_threshold=8 \
     semantic_threshold=0.1 \
     physical_threshold=0.1 \
-    vis_render=True \
-    debug_render=True
+    vis_render=False\
+    debug_render=False \
+    save_objects_all_frames=True
 #    filter_interval=20

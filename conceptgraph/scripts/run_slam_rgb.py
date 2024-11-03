@@ -116,9 +116,8 @@ def main(args: argparse.Namespace):
     pointclouds.save_to_h5(dir_to_save_map)
 
     # Set the filename for the PCD file
-    pcd_file_path = os.path.join(dir_to_save_map, "pointcloud.pcd")
+    pcd_file_path = os.path.join(dir_to_save_map, "pointcloud.ply")
     pcd = pointclouds.open3d(0)
-
 
 
     if args.save_pcd:
