@@ -853,6 +853,65 @@ class ZedDataset(GradSLAMDataset):
             poses.append(_pose)
         return poses
 
+
+class ZedDatasetDynamicIntrinsics(ZedDataset):
+
+
+    def __init__(
+        self,
+        config_dict,
+        basedir,
+        sequence,
+        stride: Optional[int] = None,
+        start: Optional[int] = 0,
+        end: Optional[int] = -1,
+        desired_height: Optional[int] = 480,
+        desired_width: Optional[int] = 640,
+        load_embeddings: Optional[bool] = False,
+        embedding_dir: Optional[str] = "embeddings",
+        embedding_dim: Optional[int] = 512,
+        **kwargs,
+    ):
+        self.input_folder = os.path.join(basedir, sequence)
+
+        # scene_intrinsic_path = os.path.join(self.input_folder, "intrinsics", "intrinsics.npy")
+        # scene_intrinsic = np.load(scene_intrinsic_path)
+        # config_dict['camera_params']['fx'] = scene_intrinsic[0, 0]
+        # config_dict['camera_params']['fy'] = scene_intrinsic[1, 1]
+        # config_dict['camera_params']['cx'] = scene_intrinsic[0, 2]
+        # config_dict['camera_params']['cy'] = scene_intrinsic[1, 2]
+        #
+        # # set image width and height
+        # config_dict['camera_params']['image_width'] = scene_intrinsic[0, 2] * 2
+        # config_dict['camera_params']['image_height'] = scene_intrinsic[1, 2] * 2
+
+        # only poses/images/depth corresponding to the realsense_camera_order are read/used
+        self.pose_path = os.path.join(self.input_folder, 'poses')
+        super().__init__(
+            config_dict,
+            basedir,
+            sequence,
+            stride=stride,
+            start=start,
+            end=end,
+            desired_height=desired_height,
+            desired_width=desired_width,
+            load_embeddings=load_embeddings,
+            embedding_dir=embedding_dir,
+            embedding_dim=embedding_dim,
+            **kwargs,
+        )
+
+    def get_filepaths(self):
+        color_paths = natsorted(glob.glob(f"{self.input_folder}/results/*.jpg"))
+        depth_paths = natsorted(glob.glob(f"{self.input_folder}/results/*.npy"))
+        embedding_paths = None
+        if self.load_embeddings:
+            embedding_paths = natsorted(
+                glob.glob(f"{self.input_folder}/{self.embedding_dir}/*.pt")
+            )
+        return color_paths, depth_paths, embedding_paths
+
 class ZedDatasetPreprocess(GradSLAMDataset):
 
     def __init__(
@@ -1317,6 +1376,8 @@ def get_dataset(dataconfig, basedir, sequence, **kwargs):
         return ZedDataset(config_dict, basedir, sequence, **kwargs)
     elif config_dict["dataset_name"].lower() in ["zed2ipre"]:
         return ZedDatasetPreprocess(config_dict, basedir, sequence, **kwargs)
+    elif config_dict["dataset_name"].lower() in ["zed2i-dynamic-intrinsics"]:
+        return ZedDatasetDynamicIntrinsics(config_dict, basedir, sequence, **kwargs)
     elif config_dict["dataset_name"].lower() in ["azure", "azurekinect"]:
         return AzureKinectDataset(config_dict, basedir, sequence, **kwargs)
     elif config_dict["dataset_name"].lower() in ["scannet"]:
