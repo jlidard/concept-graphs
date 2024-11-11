@@ -3,9 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 
-def main():
-    scene_name = 'brick_001'
-    root_dir = f'/home/jlidard/pbrick_drive/planters/{scene_name}/conceptgraphs'
+def main(root_dir, scene_name):
 
     # load in focal length
     focal_length_path = os.path.join(root_dir, 'focal_length.npy')
@@ -40,4 +38,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    planters_dir = '/home/jlidard/pbrick_drive/planters'
+    all_scenes = os.listdir(planters_dir)
+    all_scenes.sort()
+    all_scenes = all_scenes[1:]  # remove .DS_Store
+    for scene_name in all_scenes:
+        root_dir = f'/home/jlidard/pbrick_drive/planters/{scene_name}/conceptgraphs'
+        main(root_dir, scene_name)

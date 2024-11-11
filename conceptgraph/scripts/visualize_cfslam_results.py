@@ -165,7 +165,15 @@ def main(args):
     
     pcds = copy.deepcopy(objects.get_values("pcd"))
     bboxes = copy.deepcopy(objects.get_values("bbox"))
-    
+
+    bboxes = []
+    for i in range(len(objects)):
+        pcd = objects[i]['pcd']
+        # get axis aligned bounding box
+        aabb = pcd.get_axis_aligned_bounding_box()
+        aabb.color = (1, 0, 0)  # Set the bounding box color to red
+        bboxes.append(aabb)
+
     # Get the color for each object when colored by their class
     object_classes = []
     for i in range(len(objects)):
@@ -188,6 +196,15 @@ def main(args):
     # Add geometry to the scene
     for geometry in pcds + bboxes:
         vis.add_geometry(geometry)
+
+    # add origin to the scene
+    size = 1
+    frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=size)
+    vis.add_geometry(frame)
+
+    render_option = vis.get_render_option()
+    render_option.point_size = 1.0
+    render_option.background_color = np.asarray([0.1, 0.1, 0.1])  # Dark background
 
     def save_to_pyntcloud():
         from pyntcloud import PyntCloud

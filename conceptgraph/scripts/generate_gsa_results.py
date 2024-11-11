@@ -459,7 +459,7 @@ def main(args: argparse.Namespace):
             # Also hide "wall" and "floor" for now...
             add_classes = ["other item", "road", "sidewalk", "car", "tree",
                             "bush", "plant", "stone", "wall", "column", "grill", "window",
-                           "garden bed", "patio", "grass", "signpost"]
+                           "garden bed", "patio", "grass", "signpost", "siding"]
             remove_classes = [
                 "room", "kitchen", "office", "house", "home", "building", "corner",
                 "shadow", "carpet", "photo", "shade", "stall", "space", "aquarium", 

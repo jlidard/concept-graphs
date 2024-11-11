@@ -1,15 +1,14 @@
 import numpy as np
 import os
 import yaml
-def main():
+def main(root_dir, scene_name):
 
     yaml_file = '/home/jlidard/concept-graphs/conceptgraph/dataset/dataconfigs/zed2i/zed2i_dynamic_intrinsics.yaml'
 
     with open(yaml_file, "r") as file:
         cfg = yaml.safe_load(file)
 
-    base_dir = '/home/jlidard/pbrick_drive/planters/brick_001/conceptgraphs/'
-    intrinsics_file = os.path.join(base_dir, 'intrinsics/intrinsics.npy')
+    intrinsics_file = os.path.join(root_dir, 'intrinsics/intrinsics.npy')
 
     intrinsics_mat = np.load(intrinsics_file)
     fx = intrinsics_mat[0, 0].item()
@@ -28,13 +27,19 @@ def main():
     cfg["camera_params"]["cy"] = cy
 
     # make a config folder under base dir
-    config_path = os.path.join(base_dir, 'configs')
+    config_path = os.path.join(root_dir, 'configs')
     os.makedirs(config_path, exist_ok=True)
 
     # save a copy
     yaml.dump(cfg, open(os.path.join(config_path, 'config.yaml'), "w"))
 
 if __name__ == '__main__':
-    main()
+    planters_dir = '/home/jlidard/pbrick_drive/planters'
+    all_scenes = os.listdir(planters_dir)
+    all_scenes.sort()
+    all_scenes = all_scenes[1:]  # remove .DS_Store
+    for scene_name in all_scenes:
+        root_dir = f'/home/jlidard/pbrick_drive/planters/{scene_name}/conceptgraphs'
+        main(root_dir, scene_name)
 
 
