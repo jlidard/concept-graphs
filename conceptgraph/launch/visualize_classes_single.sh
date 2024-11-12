@@ -5,5 +5,6 @@ RESULT_PATH=$ROOT_DIR/$SCENE_NAME/pcd_saves/full_pcd_ram_withbg_allclasses_SINGL
 
 python scripts/visualize_cfslam_results.py \
 --result_path $RESULT_PATH \
---downsample_ratio 0.01
+--downsample_ratio 0.01 \
+--no_clip
 

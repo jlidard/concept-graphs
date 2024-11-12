@@ -457,14 +457,16 @@ def main(args: argparse.Namespace):
             # Add "other item" to capture objects not in the tag2text captions. 
             # Remove "xxx room", otherwise it will simply include the entire image
             # Also hide "wall" and "floor" for now...
-            add_classes = ["other item", "road", "sidewalk", "car", "tree",
-                            "bush", "plant", "stone", "wall", "column", "grill", "window",
-                           "garden bed", "patio", "grass", "signpost", "siding"]
+            add_classes = ["road", "sidewalk", "car", "tree", "lawn", "pavement", "ground",
+                            "bush", "plant", "column", "window", "boulder"
+                           "garden bed", "patio", "grass", "signpost", "asphalt", "mulch", "concrete"]
             remove_classes = [
                 "room", "kitchen", "office", "house", "home", "building", "corner",
                 "shadow", "carpet", "photo", "shade", "stall", "space", "aquarium", 
                 "apartment", "image", "city", "blue", "skylight", "hallway", 
-                "bureau", "modern", "salon", "doorway", "wall lamp", "wood floor"
+                "bureau", "modern", "salon", "doorway", "wall lamp", "wood floor",
+                "brick", "brickwork", "backyard", "vegetable garden", "tower", "garden bed",
+                "flower bed", "garden", "wall"
             ]
             bg_classes = ["wall", "floor", "ceiling"]
 
