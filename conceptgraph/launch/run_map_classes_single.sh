@@ -19,12 +19,12 @@ python slam/cfslam_pipeline_batch.py \
     dbscan_min_points=1 \
     gsa_variant=ram_withbg_allclasses \
     skip_bg=False \
-    max_bbox_area_ratio=0.5 \
+    max_bbox_area_ratio=1.0 \
     save_suffix=SINGLETON \
     obj_min_detections=0 \
     dbscan_remove_noise=False \
     downsample_voxel_size=0.01 \
-    mask_area_threshold=1 \
+    mask_area_threshold=2 \
     min_points_threshold=16 \
     semantic_threshold=0.20 \
     physical_threshold=0.20 \

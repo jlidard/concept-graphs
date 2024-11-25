@@ -23,5 +23,9 @@ if __name__ == '__main__':
     all_scenes.sort()
     all_scenes = all_scenes[1:]  # remove .DS_Store
     for scene_name in all_scenes:
-        root_dir = f'/home/jlidard/pbrick_drive/planters/{scene_name}/'
-        main(root_dir, scene_name)
+        try:
+            root_dir = f'/home/jlidard/pbrick_drive/planters/{scene_name}/'
+            main(root_dir, scene_name)
+        except Exception as e:
+            print(e)
+            print('Moving on the scene: {}'.format(scene_name))

@@ -20,6 +20,66 @@ from gradslam.structures.pointclouds import Pointclouds
 from conceptgraph.slam.slam_classes import MapObjectList
 from conceptgraph.utils.vis import LineMesh
 from conceptgraph.slam.utils import filter_objects, merge_objects
+import numpy as np
+from scipy.spatial import ConvexHull
+from shapely.geometry import MultiPoint
+import open3d as o3d
+
+
+def compute_yaw_aligned_open3d_bbox(point_cloud):
+    """
+    Computes a yaw-aligned Open3D bounding box for a 3D point cloud with [x, z, y] ordering.
+
+    Parameters:
+        point_cloud (o3d.geometry.PointCloud): Open3D PointCloud object with points in [x, z, y] order.
+
+    Returns:
+        o3d.geometry.OrientedBoundingBox: An Open3D OrientedBoundingBox object for the 3D bounding box.
+    """
+    # Convert Open3D point cloud to NumPy array
+    points = np.asarray(point_cloud.points)
+
+    # Project points to the XY plane (which is [x, y] in the [x, z, y] format)
+    points_xy = points[:, [0, 2]]
+
+    # Compute 2D convex hull
+    hull = ConvexHull(points_xy)
+    hull_points = points_xy[hull.vertices]
+
+    # Find minimum area bounding rectangle
+    hull_polygon = MultiPoint(hull_points).convex_hull
+    min_area_rect = hull_polygon.minimum_rotated_rectangle
+
+    # Extract rectangle coordinates from the 2D bounding rectangle
+    bbox_2d_coords = np.array(min_area_rect.exterior.coords)[:-1]  # Skip the repeated last point
+
+    # Get min and max Z (vertical axis)
+    z_min = np.min(points[:, 1])
+    z_max = np.max(points[:, 1])
+
+    # Define the 8 corners of the 3D bounding box based on the 2D rectangle and z bounds
+    bbox_3d_corners = np.array([
+        [bbox_2d_coords[0][0], z_min, bbox_2d_coords[0][1]],
+        [bbox_2d_coords[1][0], z_min, bbox_2d_coords[1][1]],
+        [bbox_2d_coords[2][0], z_min, bbox_2d_coords[2][1]],
+        [bbox_2d_coords[3][0], z_min, bbox_2d_coords[3][1]],
+        [bbox_2d_coords[0][0], z_max, bbox_2d_coords[0][1]],
+        [bbox_2d_coords[1][0], z_max, bbox_2d_coords[1][1]],
+        [bbox_2d_coords[2][0], z_max, bbox_2d_coords[2][1]],
+        [bbox_2d_coords[3][0], z_max, bbox_2d_coords[3][1]]
+    ])
+
+    # Create an Open3D OrientedBoundingBox from the corner points
+    bbox_open3d = o3d.geometry.OrientedBoundingBox.create_from_points(o3d.utility.Vector3dVector(bbox_3d_corners))
+
+    return bbox_open3d
+
+
+# Example usage
+# pcd = o3d.io.read_point_cloud("path_to_your_point_cloud.ply")  # Replace with actual point cloud data
+# bbox_open3d = compute_yaw_aligned_open3d_bbox(pcd)
+# o3d.visualization.draw_geometries([pcd, bbox_open3d])
+
 
 def create_ball_mesh(center, radius, color=(0, 1, 0)):
     """
@@ -43,6 +103,7 @@ def get_parser():
     parser.add_argument("--result_path", type=str, default=None)
     parser.add_argument("--rgb_pcd_path", type=str, default=None)
     parser.add_argument("--edge_file", type=str, default=None)
+    parser.add_argument("--bbox_volume_thresh", type=float, default=5e3)
     
     parser.add_argument("--no_clip", action="store_true", 
                         help="If set, the CLIP model will not init for fast debugging.")
@@ -169,10 +230,16 @@ def main(args):
     bboxes = []
     for i in range(len(objects)):
         pcd = objects[i]['pcd']
-        # get axis aligned bounding box
-        aabb = pcd.get_axis_aligned_bounding_box()
-        aabb.color = (1, 0, 0)  # Set the bounding box color to red
-        bboxes.append(aabb)
+        bbox = compute_yaw_aligned_open3d_bbox(pcd)
+        bbox_extent = bbox.extent
+        width, height, depth = bbox_extent
+        volume = width * height * depth  # Volume of a box
+        if volume < args.bbox_volume_thresh:
+            bboxes.append(bbox)
+        # # get axis aligned bounding box
+        # aabb = pcd.get_axis_aligned_bounding_box()
+        # aabb.color = (1, 0, 0)  # Set the bounding box color to red
+        # bboxes.append(aabb)
 
     # Get the color for each object when colored by their class
     object_classes = []

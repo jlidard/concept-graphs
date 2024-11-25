@@ -11,8 +11,8 @@ python scripts/generate_gsa_results.py \
     --dataset_config $CONFIG_PATH \
     --scene_id $SCENE_NAME \
     --class_set $CLASS_SET \
-    --box_threshold 0.25 \
-    --text_threshold 0.25 \
+    --box_threshold 0.2 \
+    --text_threshold 0.2 \
     --stride 1 \
     --add_bg_classes \
     --exp_suffix withbg_allclasses

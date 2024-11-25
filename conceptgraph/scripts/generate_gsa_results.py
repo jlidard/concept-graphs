@@ -466,7 +466,7 @@ def main(args: argparse.Namespace):
                 "apartment", "image", "city", "blue", "skylight", "hallway", 
                 "bureau", "modern", "salon", "doorway", "wall lamp", "wood floor",
                 "brick", "brickwork", "backyard", "vegetable garden", "tower", "garden bed",
-                "flower bed", "garden", "wall"
+                "flower bed", "garden", "wall", "fire pit", "construction site", "ceiling", "stone"
             ]
             bg_classes = ["wall", "floor", "ceiling"]
 
