@@ -148,9 +148,122 @@ def load_result(result_path):
         
     return objects, bg_objects, class_colors
 
+from scipy.spatial import ConvexHull, Delaunay
+from tqdm import tqdm
+
+def compute_iou_3d(bbox1, bbox2):
+    """
+    Compute the Intersection over Union (IoU) for two 3D bounding boxes using ConvexHull.
+    Args:
+        bbox1 (o3d.geometry.OrientedBoundingBox): First bounding box.
+        bbox2 (o3d.geometry.OrientedBoundingBox): Second bounding box.
+    Returns:
+        float: IoU value.
+    """
+    # Get corner points for both bounding boxes
+    corners1 = np.asarray(bbox1.get_box_points())
+    corners2 = np.asarray(bbox2.get_box_points())
+
+    try:
+        # Combine the points for the intersection volume calculation
+        combined_points = np.vstack((corners1, corners2))
+        intersection_hull = ConvexHull(combined_points)
+        
+        # Check if the combined hull volume equals the sum of individual volumes
+        intersection_volume = intersection_hull.volume
+        if np.isclose(intersection_volume, bbox1.volume() + bbox2.volume()):
+            # If no intersection, the combined hull volume is just the sum of individual volumes
+            intersection_volume = 0.0
+
+    except Exception as e:
+        # Handle cases where no intersection is computable
+        print(f"Warning: Could not compute intersection: {e}")
+        intersection_volume = 0.0
+
+    # Calculate union volume
+    union_volume = bbox1.volume() + bbox2.volume() - intersection_volume
+
+    return intersection_volume / union_volume if union_volume > 0 else 0
+
+
+def merge_objects_based_on_iou(objects, iou_threshold):
+    """
+    Merge objects based on IoU of their yaw-aligned oriented bounding boxes.
+    Args:
+        objects (MapObjectList): List of objects with 'pcd' and 'bbox' attributes.
+        iou_threshold (float): IoU threshold for merging.
+    Returns:
+        MapObjectList: Updated object list with merged objects.
+    """
+    merged_objects = []
+    used_indices = set()
+
+    for i in tqdm(range(len(objects))):
+        if i in used_indices:
+            continue
+        obj_i = objects[i]
+        bbox_i = compute_yaw_aligned_open3d_bbox(obj_i['pcd'])
+
+        merged_pcd_points = np.asarray(obj_i['pcd'].points)
+        merged_indices = {i}
+
+        for j in range(i + 1, len(objects)):
+            if j in used_indices:
+                continue
+            obj_j = objects[j]
+            bbox_j = compute_yaw_aligned_open3d_bbox(obj_j['pcd'])
+            iou = compute_iou_3d(bbox_i, bbox_j)
+            print(iou)
+
+            if iou >= iou_threshold:
+                used_indices.add(j)
+                merged_indices.add(j)
+                merged_pcd_points = np.vstack((merged_pcd_points, np.asarray(obj_j['pcd'].points)))
+
+        # Create a new object from merged points
+        merged_pcd = o3d.geometry.PointCloud()
+        merged_pcd.points = o3d.utility.Vector3dVector(merged_pcd_points)
+
+        # Handle missing keys with default values
+        merged_obj = {
+            'pcd': merged_pcd,
+            'class_id': np.concatenate([objects[idx].get('class_id', []) for idx in merged_indices]),
+            'detections': sum(objects[idx].get('detections', 0) for idx in merged_indices)  # Default to 0 if missing
+        }
+        merged_objects.append(merged_obj)
+        used_indices.update(merged_indices)
+
+    return MapObjectList(merged_objects)
+
+
+# Integrate the merge function into your pipeline
 def main(args):
     result_path = args.result_path
     rgb_pcd_path = args.rgb_pcd_path
+    
+    assert not (result_path is None and rgb_pcd_path is None), \
+        "Either result_path or rgb_pcd_path must be provided."
+
+    if rgb_pcd_path is not None:        
+        pointclouds = Pointclouds.load_pointcloud_from_h5(rgb_pcd_path)
+        global_pcd = pointclouds.open3d(0, include_colors=True)
+        
+        if result_path is None:
+            print("Only visualizing the pointcloud...")
+            o3d.visualization.draw_geometries([global_pcd])
+            exit()
+        
+    objects, bg_objects, class_colors = load_result(result_path)
+    
+    # Perform object merging based on IoU
+    iou_merge_thresh = 0.05
+    if iou_merge_thresh > 0:
+        print(f"Merging objects with IoU threshold {iou_merge_thresh}...")
+        objects = merge_objects_based_on_iou(objects, iou_merge_thresh)
+        print("Merging completed.")
+    
+    # (Continue with the rest of your main pipeline...)
+
     
     assert not (result_path is None and rgb_pcd_path is None), \
         "Either result_path or rgb_pcd_path must be provided."

@@ -23,16 +23,21 @@ mapping:
   iters_first: 1500
   iters: 60
 camera_params:
-  image_height: 720
-  image_width: 1280
+  image_height: 1242
+  image_width: 2208
+  # HD 2k outside
+  fx: 1066.84
+  fy: 1067.42
+  cx: 1083.98
+  cy: 613.74
 #  fx: 1065.58
 #  fy: 1065.57
 #  cx: 1126.85
 #  cy: 624.003
-  fx: 532.79
-  fy: 532.785
-  cx: 649.925
-  cy: 360.0015
+  # fx: 532.79
+  # fy: 532.785
+  # cx: 649.925
+  # cy: 360.0015
 #  fx: 525.0115942826667
 #  fy: 525.0115942826667
 #  cx: 640.0

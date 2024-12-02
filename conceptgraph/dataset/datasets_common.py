@@ -840,8 +840,8 @@ class ZedDataset(GradSLAMDataset):
         P = torch.tensor(
             [
                 [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, 1, 0],
+                [0, -1, 0, 0],
+                [0, 0, -1, 0],
                 [0, 0, 0, 1]
             ]
         ).float()
@@ -849,7 +849,7 @@ class ZedDataset(GradSLAMDataset):
             c2w = torch.from_numpy(np.load(posefile)).float()
             _R = c2w[:3, :3]
             _t = c2w[:3, 3]
-            _pose = P @ c2w # @ P
+            _pose = c2w @ P
             poses.append(_pose)
         return poses
 
