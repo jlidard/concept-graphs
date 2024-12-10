@@ -256,15 +256,13 @@ def main(args):
     objects, bg_objects, class_colors = load_result(result_path)
     
     # Perform object merging based on IoU
-    iou_merge_thresh = 0.05
+    iou_merge_thresh = 0
     if iou_merge_thresh > 0:
         print(f"Merging objects with IoU threshold {iou_merge_thresh}...")
         objects = merge_objects_based_on_iou(objects, iou_merge_thresh)
         print("Merging completed.")
     
-    # (Continue with the rest of your main pipeline...)
 
-    
     assert not (result_path is None and rgb_pcd_path is None), \
         "Either result_path or rgb_pcd_path must be provided."
 
@@ -341,6 +339,7 @@ def main(args):
     bboxes = copy.deepcopy(objects.get_values("bbox"))
 
     bboxes = []
+
     for i in range(len(objects)):
         pcd = objects[i]['pcd']
         bbox = compute_yaw_aligned_open3d_bbox(pcd)
@@ -349,6 +348,21 @@ def main(args):
         volume = width * height * depth  # Volume of a box
         if volume < args.bbox_volume_thresh:
             bboxes.append(bbox)
+    object_dict = {}
+    # store object id together with bbox extent and quaternion pose of bbox
+    for i in range(len(bboxes)):
+        # get extent
+        bbox = bboxes[i]
+        bbox_properties = {}
+        rot_mat = bbox.R
+        theta = np.arctan2(-rot_mat[2, 0], rot_mat[0, 0])
+        theta_deg = theta * 180 / np.pi
+        bbox_properties["extent"] = bbox.extent
+        bbox_properties["center"] = bbox.center
+        bbox_properties["theta"] = theta_deg
+        bbox_properties["semantic_label"] = None
+        object_dict[i] = bbox_properties
+
         # # get axis aligned bounding box
         # aabb = pcd.get_axis_aligned_bounding_box()
         # aabb.color = (1, 0, 0)  # Set the bounding box color to red

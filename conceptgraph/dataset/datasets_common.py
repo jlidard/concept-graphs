@@ -840,8 +840,8 @@ class ZedDataset(GradSLAMDataset):
         P = torch.tensor(
             [
                 [1, 0, 0, 0],
-                [0, -1, 0, 0],
-                [0, 0, -1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
                 [0, 0, 0, 1]
             ]
         ).float()

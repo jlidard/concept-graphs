@@ -146,9 +146,9 @@ def draw_red_outline(image, mask):
     # Draw red outlines around the object. The last argument "3" indicates the thickness of the outline.
     cv2.drawContours(image_np, contours, -1, red_outline, 3)
 
-    # Optionally, add padding around the object by dilating the drawn contours
-    kernel = np.ones((5, 5), np.uint8)
-    image_np = cv2.dilate(image_np, kernel, iterations=1)
+    # # Optionally, add padding around the object by dilating the drawn contours
+    # kernel = np.ones((5, 5), np.uint8)
+    # image_np = cv2.dilate(image_np, kernel, iterations=1)
     
     image_pil = Image.fromarray(image_np)
 
@@ -213,12 +213,12 @@ def plot_images_with_captions(images, captions, confidences, low_confidences, ma
 
         # Apply the mask to the image
         img_array = np.array(images[i])
-        if img_array.shape[:2] != masks[i].shape:
-            ax.text(0.5, 0.5, "Plotting error: Shape mismatch between image and mask", ha='center', va='center')
-        else:
-            green_mask = np.zeros((*masks[i].shape, 3), dtype=np.uint8)
-            green_mask[masks[i]] = [0, 255, 0]  # Green color where mask is True
-            ax.imshow(green_mask, alpha=0.15)  # Overlay with transparency
+        # if img_array.shape[:2] != masks[i].shape:
+        #     ax.text(0.5, 0.5, "Plotting error: Shape mismatch between image and mask", ha='center', va='center')
+        # else:
+        #     green_mask = np.zeros((*masks[i].shape, 3), dtype=np.uint8)
+        #     green_mask[masks[i]] = [0, 255, 0]  # Green color where mask is True
+        #     ax.imshow(green_mask, alpha=0.15)  # Overlay with transparency
 
         title_text = f"Caption: {captions[i]}\nConfidence: {confidences[i]:.2f}"
         if low_confidences[i]:
@@ -276,7 +276,7 @@ def extract_node_captions(args):
     chat = LLaVaChat(chat_args.model_path, chat_args.conv_mode, chat_args.num_gpus)
     # chat = LLaVaChat(chat_args)
     print("LLaVA chat initialized...")
-    query = "Describe the central object in the image."
+    query = "Describe the object or surface in the center of the image. Ignore any brick planters or small brick structures."
     # query = "Describe the object in the image that is outlined in red."
 
     # Directories to save features and captions
@@ -303,8 +303,8 @@ def extract_node_captions(args):
         confidences_list = []
         low_confidences_list = []
         mask_list = []  # New list for masks
-        if len(idx_most_conf) < 2:
-            continue 
+        # if len(idx_most_conf) < 2:
+        #     continue
         idx_most_conf = idx_most_conf[:args.max_detections_per_object]
 
         for idx_det in tqdm(idx_most_conf):
@@ -315,7 +315,7 @@ def extract_node_captions(args):
             # Retrieve and crop mask
             mask = obj["mask"][idx_det]
             
-            padding = 10
+            padding = 50
             x1, y1, x2, y2 = xyxy
             # image_crop = crop_image_pil(image, x1, y1, x2, y2, padding=padding)
             image_crop, mask_crop = crop_image_and_mask(image, mask, x1, y1, x2, y2, padding=padding)
@@ -327,7 +327,7 @@ def extract_node_captions(args):
                 image_crop_modified = image_crop  # No modification
 
             _w, _h = image_crop.size
-            if _w * _h < 70 * 70:
+            if _w * _h < 50 * 50:
                 # captions.append("small object")
                 print("small object. Skipping LLaVA captioning...")
                 low_confidences.append(True)
@@ -352,7 +352,7 @@ def extract_node_captions(args):
             
             # For the LLava debug folder
             conf_value = conf[idx_det]
-            image_list.append(image_crop)
+            image_list.append(image_crop_modified)
             caption_list.append(outputs)
             confidences_list.append(conf_value)
             low_confidences_list.append(low_confidences[-1])
@@ -570,14 +570,15 @@ def build_scenegraph(args):
     #     object_tags.append(_d["object_tag"])
 
     # Remove segments that correspond to "invalid" tags
-    indices_to_remove = [i for i in range(len(responses)) if object_tags[i].lower() in ["fail", "invalid"]]
+    # indices_to_remove = [i for i in range(len(responses)) if object_tags[i].lower() in ["fail", "invalid"]]
+    indices_to_remove = [] # remove later
     # Also remove segments that do not have a minimum number of observations
     indices_to_remove = set(indices_to_remove)
     for obj_idx in range(len(scene_map)):
         conf = scene_map[obj_idx]["conf"]
         # Remove objects with less than args.min_views_per_object observations
-        if len(conf) < args.min_views_per_object:
-            indices_to_remove.add(obj_idx)
+        # if len(conf) < args.min_views_per_object:
+        #     indices_to_remove.add(obj_idx)
     indices_to_remove = list(indices_to_remove)
     # combine with also_indices_to_remove and sort the list
     indices_to_remove = list(set(indices_to_remove + also_indices_to_remove))

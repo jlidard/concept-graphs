@@ -5,7 +5,7 @@ python scripts/run_slam_rgb.py \
     --scene_id $SCENE_NAME \
     --image_height 720 \
     --image_width 1280 \
-    --stride 25 \
+    --stride 1 \
     --visualize \
     --save_pcd \
 #    --end 200
