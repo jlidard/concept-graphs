@@ -1,34 +1,18 @@
 # runs conceptgraph on entire ICL dataset
 
 # preprocess the dataset to extract intrinsics, poses, and camera config
-python launch/preprocess_intrinsics.py
-python launch/preprocess_poses.py
-python launch/preprocess_yaml_config.py
 
-path="/home/jlidard/pbrick_drive/planters"
+python launch/preprocess_poses.py
+
+path="/home/jlidard/pbrick_drive/ECL_buildable"
 subdirs=($(find "$path" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort))
 echo "$subdirs"
 
-#script_path="./launch/extract_2d_classes_single.sh"
-#start_num=6
-#stop_num=6
-#echo ${#subdirs[@]}
-#
-#for i in $(seq $start_num $stop_num); do
-#  if (( i - 1 < ${#subdirs[@]} )); then
-#    scene_path="${subdirs[$((i - 1))]}"  # Adjust for zero-based indexing
-#    echo "Processing scene $scene_path"
-#  else
-#    echo "Index $i is out of bounds for the array 'subdirs'."
-#    continue
-#  fi
-#  bash "$script_path" "$scene_path"
-#done
 
 
-#script_path="./launch/run_map_classes_single.sh"
+#script_path="./launch/extract_2d_classes_env.sh"
 #start_num=1
-#stop_num=20
+#stop_num=1
 #echo ${#subdirs[@]}
 #
 #for i in $(seq $start_num $stop_num); do
@@ -43,9 +27,9 @@ echo "$subdirs"
 #done
 
 
-#script_path="./launch/visualize_classes_single.sh"
-#start_num=6
-#stop_num=6
+#script_path="./launch/run_map_classes_env.sh"
+#start_num=1
+#stop_num=1
 #echo ${#subdirs[@]}
 #
 #for i in $(seq $start_num $stop_num); do
@@ -60,9 +44,9 @@ echo "$subdirs"
 #done
 
 
-#script_path="./launch/run_scene_graph_single.sh"
-#start_num=6
-#stop_num=20
+#script_path="./launch/visualize_classes_env.sh"
+#start_num=1
+#stop_num=1
 #echo ${#subdirs[@]}
 #
 #for i in $(seq $start_num $stop_num); do
@@ -76,9 +60,26 @@ echo "$subdirs"
 #  bash "$script_path" "$scene_path"
 #done
 
-script_path="./launch/run_generate_vertices_single.sh"
-start_num=9
-stop_num=20
+
+#script_path="./launch/run_scene_graph_env.sh"
+#start_num=1
+#stop_num=1
+#echo ${#subdirs[@]}
+#
+#for i in $(seq $start_num $stop_num); do
+#  if (( i - 1 < ${#subdirs[@]} )); then
+#    scene_path="${subdirs[$((i - 1))]}"  # Adjust for zero-based indexing
+#    echo "Processing scene $scene_path"
+#  else
+#    echo "Index $i is out of bounds for the array 'subdirs'."
+#    continue
+#  fi
+#  bash "$script_path" "$scene_path"
+#done
+
+script_path="./launch/run_generate_vertices_env.sh"
+start_num=1
+stop_num=1
 echo ${#subdirs[@]}
 
 for i in $(seq $start_num $stop_num); do
