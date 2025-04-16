@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# TODO: set env variable for conceptgraph and/or make it a submodule
 scene_name=250416_lab_100_2_0.01_20_1
 
 ./launch/extract_2d_classes.sh ${scene_name}
