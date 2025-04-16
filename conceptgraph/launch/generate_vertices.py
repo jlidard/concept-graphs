@@ -49,7 +49,11 @@ def get_parser():
     parser.add_argument("--json_file", type=str, default=None)
     parser.add_argument("--save_file", type=str, default=None)
     parser.add_argument("--save_partial_pcd_path", type=str, default=None)
+    parser.add_argument("--full_pc_path", type=str, default=None)
     parser.add_argument("--skip_rendering", action="store_true")
+    parser.add_argument("--bbox_type", type=str, default="axis_aligned",
+                        choices=["axis_aligned", "yaw_aligned"],
+                        help="Type of bounding box to compute: 'axis_aligned' or 'yaw_aligned'.")
     return parser
 
 
@@ -111,9 +115,25 @@ def main(args):
         vertices_labels = json.load(f)
 
     bboxes = []
+    
+    # Transform point cloud from image frame to x-forward, y-left, z-up frame
+    transformation_matrix = np.array([[0, 0, 1, 0],
+                                       [-1, 0, 0, 0],
+                                       [0, 1, 0, 0],
+                                       [0, 0, 0, 1]])
 
+    # Additional transformation to flip y and z
+    flip_yz_matrix = np.array([[1, 0, 0, 0],
+                                [0, -1, 0, 0],
+                                [0, 0, -1, 0],
+                                [0, 0, 0, 1]])
+
+    # Combine the transformations
+    transformation_matrix = np.dot(flip_yz_matrix, transformation_matrix)
     for i in range(len(objects)):
         pcd = objects[i]['pcd']
+
+        pcd.transform(transformation_matrix)
         # Remove statistical outliers
         cl, ind = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=0.5)
 
@@ -122,8 +142,14 @@ def main(args):
 
         # Visualize the cleaned point cloud
         pcd = pcd_inliers
-        bbox = compute_yaw_aligned_open3d_bbox(pcd)
-        bbox_extent = bbox.extent
+        if args.bbox_type == "yaw_aligned":
+            bbox = compute_yaw_aligned_open3d_bbox(pcd)
+            bbox_extent = bbox.extent
+        elif args.bbox_type == "axis_aligned":
+            bbox = pcd.get_axis_aligned_bounding_box()
+            bbox_extent = bbox.get_extent()
+        else:
+            raise ValueError("Unknown bbox type: ", args.bbox_type)
         width, height, depth = bbox_extent
         volume = width * height * depth  # Volume of a box
         if volume < args.bbox_volume_thresh:
@@ -134,11 +160,19 @@ def main(args):
         # get extent
         bbox = bboxes[i]
         bbox_properties = {}
-        rot_mat = bbox.R
-        theta = np.arctan2(-rot_mat[2, 0], rot_mat[0, 0])
+        if args.bbox_type == "yaw_aligned":
+            rot_mat = bbox.R
+            bbox_extent = bbox.extent
+            bbox_center = bbox.center
+        else:
+            rot_mat = np.eye(3)
+            bbox_extent = bbox.get_extent()
+            bbox_center = bbox.get_center()
+        # theta = np.arctan2(-rot_mat[2, 0], rot_mat[0, 0])
+        theta = np.arctan2(rot_mat[1, 0], rot_mat[0, 0])
         theta_deg = theta * 180 / np.pi
-        bbox_properties["extent"] = bbox.extent
-        bbox_properties["center"] = bbox.center
+        bbox_properties["extent"] = bbox_extent
+        bbox_properties["center"] = bbox_center
         bbox_properties["theta"] = theta_deg
         if i < len(vertices_labels):
             if "ignore" in vertices_labels[i].lower():
@@ -162,6 +196,7 @@ def main(args):
     # save pcd
     pcds_to_merge = []
     for i, pcd in enumerate(pcds):
+        pcd.transform(transformation_matrix)
         if i not in keys_to_delete:
             pcds_to_merge.append(pcd)
 
@@ -176,6 +211,13 @@ def main(args):
     with open(args.save_file, "wb") as f:
         pickle.dump(object_dict, f)
 
+    # human-readbale
+    with open(args.save_file, "w") as f:
+        object_dict = {k: {key: (value.tolist() if isinstance(value, np.ndarray) else value) 
+                   for key, value in v.items()} 
+                   for k, v in object_dict.items()}
+        json.dump(object_dict, f, indent=4)
+
     # rendering
     if args.skip_rendering:
         return
@@ -189,8 +231,14 @@ def main(args):
         vis.create_window(window_name=f'Open3D', width=1280, height=720)
 
     # Add geometry to the scene
-    for geometry in pcds:
-        vis.add_geometry(geometry)
+    if args.full_pc_path is not None:
+        full_pcd = o3d.io.read_point_cloud(str(args.full_pc_path))
+        full_pcd.transform(transformation_matrix)
+        vis.add_geometry(full_pcd)
+    else:
+        # use the segmented pcds
+        for geometry in pcds:
+            vis.add_geometry(geometry)
     for i, geometry in enumerate(bboxes):
         if i not in keys_to_delete:
             vis.add_geometry(geometry)

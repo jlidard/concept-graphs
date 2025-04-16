@@ -296,9 +296,9 @@ def preprocess_images(args):
     # Directories to save features and captions
     savedir_feat = Path(args.cachedir) / "cfslam_feat_llava"
     savedir_feat.mkdir(exist_ok=True, parents=True)
-    savedir_captions = Path(args.cachedir) / "cfslam_captions_llava"
+    savedir_captions = Path(args.cachedir) / "cfslam_captions_gpt"
     savedir_captions.mkdir(exist_ok=True, parents=True)
-    savedir_debug = Path(args.cachedir) / "cfslam_captions_llava_debug"
+    savedir_debug = Path(args.cachedir) / "cfslam_captions_gpt_debug"
     savedir_debug.mkdir(exist_ok=True, parents=True)
 
     caption_dict_list = []

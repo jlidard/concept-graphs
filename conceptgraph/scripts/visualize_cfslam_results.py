@@ -332,7 +332,7 @@ def main(args):
     # Sub-sample the point cloud for better interactive experience
     for i in range(len(objects)):
         pcd = objects[i]['pcd']
-        pcd = pcd.voxel_down_sample(args.downsample_ratio)
+        # pcd = pcd.voxel_down_sample(args.downsample_ratio)
         objects[i]['pcd'] = pcd
     
     pcds = copy.deepcopy(objects.get_values("pcd"))

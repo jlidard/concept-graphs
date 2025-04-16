@@ -460,15 +460,19 @@ def main(args: argparse.Namespace):
             add_classes = ["road", "sidewalk", "car", "tree", "lawn", "pavement", "ground",
                             "bush", "plant", "column", "window", "boulder"
                            "garden bed", "patio", "grass", "signpost", "asphalt", "mulch", "concrete"]
+            add_classes = ["water bottle", "bag", "monitor", "keyboard", "mouse", "cup", "bowl", "plate", "fork", "knife",
+                           "paper", "book", "notebook", "pencil", "pen", "scissors", "tape", "stapler", "glue", "ruler",
+                           "headphones", "speaker", "camera", "phone", "charger", "battery", "light bulb", "lamp", "fan", "air conditioner",
+                           "jar", "box"]
             remove_classes = [
                 "room", "kitchen", "office", "house", "home", "building", "corner",
                 "shadow", "carpet", "photo", "shade", "stall", "space", "aquarium", 
                 "apartment", "image", "city", "blue", "skylight", "hallway", 
                 "bureau", "modern", "salon", "doorway", "wall lamp", "wood floor",
                 "brick", "brickwork", "backyard", "vegetable garden", "tower", "garden bed",
-                "flower bed", "garden", "wall", "fire pit", "construction site", "ceiling", "stone"
+                "flower bed", "garden", "wall", "fire pit", "construction site", "ceiling", "stone", 
             ]
-            bg_classes = ["wall", "floor", "ceiling"]
+            bg_classes = ["wall", "floor", "ceiling", "shelf"]
 
             if args.add_bg_classes:
                 add_classes += bg_classes
