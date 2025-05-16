@@ -372,7 +372,7 @@ def main(args: argparse.Namespace):
             specified_tags='None'
             # load model
             tagging_model = tag2text.tag2text_caption(pretrained=TAG2TEXT_CHECKPOINT_PATH,
-                                                    image_size=384,
+                                                    image_size=224,
                                                     vit='swin_b',
                                                     delete_tag_index=delete_tag_index)
             # threshold for tagging
@@ -380,14 +380,14 @@ def main(args: argparse.Namespace):
             tagging_model.threshold = 0.64 
         elif args.class_set == "ram":
             tagging_model = ram(pretrained=RAM_CHECKPOINT_PATH,
-                                         image_size=384,
+                                         image_size=224,
                                          vit='swin_l')
             
         tagging_model = tagging_model.eval().to(args.device)
         
         # initialize Tag2Text
         tagging_transform = TS.Compose([
-            TS.Resize((384, 384)),
+            TS.Resize((224,224)),
             TS.ToTensor(), 
             TS.Normalize(mean=[0.485, 0.456, 0.406],
                          std=[0.229, 0.224, 0.225]),
@@ -457,14 +457,22 @@ def main(args: argparse.Namespace):
             # Add "other item" to capture objects not in the tag2text captions. 
             # Remove "xxx room", otherwise it will simply include the entire image
             # Also hide "wall" and "floor" for now...
-            add_classes = ["other item"]
+            add_classes = ["road", "sidewalk", "car", "tree", "lawn", "pavement", "ground",
+                            "bush", "plant", "column", "window", "boulder"
+                           "garden bed", "patio", "grass", "signpost", "asphalt", "mulch", "concrete"]
+            add_classes = ["water bottle", "bag", "monitor", "keyboard", "mouse", "cup", "bowl", "plate", "fork", "knife",
+                           "paper", "book", "notebook", "pencil", "pen", "scissors", "tape", "stapler", "glue", "ruler",
+                           "headphones", "speaker", "camera", "phone", "charger", "battery", "light bulb", "lamp", "fan", "air conditioner",
+                           "jar", "box"]
             remove_classes = [
                 "room", "kitchen", "office", "house", "home", "building", "corner",
                 "shadow", "carpet", "photo", "shade", "stall", "space", "aquarium", 
                 "apartment", "image", "city", "blue", "skylight", "hallway", 
-                "bureau", "modern", "salon", "doorway", "wall lamp", "wood floor"
+                "bureau", "modern", "salon", "doorway", "wall lamp", "wood floor",
+                "brick", "brickwork", "backyard", "vegetable garden", "tower", "garden bed",
+                "flower bed", "garden", "wall", "fire pit", "construction site", "ceiling", "stone", 
             ]
-            bg_classes = ["wall", "floor", "ceiling"]
+            bg_classes = ["wall", "floor", "ceiling", "shelf"]
 
             if args.add_bg_classes:
                 add_classes += bg_classes

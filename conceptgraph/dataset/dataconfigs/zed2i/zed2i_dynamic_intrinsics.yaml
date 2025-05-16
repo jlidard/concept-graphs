@@ -1,0 +1,4 @@
+dataset_name: 'zed2i-dynamic-intrinsics'
+camera_params:
+  png_depth_scale: 1  #for depth image in png format
+  crop_edge: 0
