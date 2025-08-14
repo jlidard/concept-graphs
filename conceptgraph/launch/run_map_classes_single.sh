@@ -1,9 +1,10 @@
 # On the ConceptGraphs-Detect
 SCENE_ID=$1
-ROOT_DIR=/home/jlidard/pbrick_drive/planters/$SCENE_ID
-CONFIG_PATH=/home/jlidard/pbrick_drive/planters/$SCENE_ID/conceptgraphs/configs/config.yaml
+ROOT_DIR=/home/pbrick/dev/data # /$SCENE_ID
+# CONFIG_PATH=/home/jlidard/pbrick_drive/planters/$SCENE_ID/conceptgraphs/configs/config.yaml
+CONFIG_PATH='/home/pbrick/concept-graphs/conceptgraph/dataset/dataconfigs/zed2i/zed2i.yaml'
 CLASS_SET=ram
-SCENE_NAME=conceptgraphs
+SCENE_NAME=250814_ECL_200_2_0.01_20_1
 THRESHOLD=1.2
 
 python slam/cfslam_pipeline_batch.py \

@@ -810,7 +810,8 @@ class ZedDataset(GradSLAMDataset):
     ):
         self.input_folder = os.path.join(basedir, sequence)
         # only poses/images/depth corresponding to the realsense_camera_order are read/used
-        self.pose_path = os.path.join(self.input_folder, 'poses')
+        self.pose_path = os.path.join(self.input_folder, 'zed_poses')   # !!!DR
+        print(self.pose_path)
         super().__init__(
             config_dict,
             stride=stride,
@@ -845,12 +846,30 @@ class ZedDataset(GradSLAMDataset):
                 [0, 0, 0, 1]
             ]
         ).float()
+        # P = torch.tensor(
+        #     [
+        #         [0, 0, 1, 0],
+        #         [0, -1, 0, 0],
+        #         [1, 0, 0, 0],
+        #         [0, 0, 0, 1]
+        #     ]
+        # ).float()
+        # P = torch.tensor(
+        #     [
+        #         [-0.05894814, -0.29012632,  0.9551711,   0.03549325],
+        #         [ 0.70196216,  0.66826924,  0.24630337, -0.14504493],
+        #         [-0.70977055,  0.6850131,   0.16426447, -0.33190852],
+        #         [ 0.,          0.,          0.,          1.        ]
+        #     ]
+        # ).float()
+        # P = torch.linalg.inv(P)
         for posefile in posefiles:
             c2w = torch.from_numpy(np.load(posefile)).float()
-            _R = c2w[:3, :3]
-            _t = c2w[:3, 3]
-            _pose = c2w @ P
-            poses.append(_pose)
+            # _R = c2w[:3, :3]
+            # _t = c2w[:3, 3]
+            # _pose = c2w @ P
+            # poses.append(_pose)
+            poses.append(c2w)
         return poses
 
 

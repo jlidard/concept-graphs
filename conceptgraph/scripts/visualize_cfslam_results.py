@@ -286,7 +286,8 @@ def main(args):
             edges = json.load(f)
 
         classes = objects.get_most_common_class()
-        colors = [class_colors[str(c)] for c in classes]
+        # colors = [class_colors[str(c)] for c in classes]
+        colors = [class_colors.get(str(c), (0.5, 0.5, 0.5)) for c in classes]
         obj_centers = []
         for obj, c in zip(objects, colors):
             pcd = obj['pcd']
@@ -409,7 +410,7 @@ def main(args):
         pyntcloud = PyntCloud(df)
 
         # Save the point cloud as a .ply file
-        pyntcloud.to_file(os.path.join('/home/jlidard/predictive_brickwork/tests/perception', f"{scene_id}.ply"))
+        pyntcloud.to_file(os.path.join('/home/pbrick/dev/data', f"{scene_id}.ply"))
 
     if args.save_pynt == 1:
         save_to_pyntcloud()
