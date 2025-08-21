@@ -810,7 +810,8 @@ class ZedDataset(GradSLAMDataset):
     ):
         self.input_folder = os.path.join(basedir, sequence)
         # only poses/images/depth corresponding to the realsense_camera_order are read/used
-        self.pose_path = os.path.join(self.input_folder, 'poses')
+        self.pose_path = os.path.join(self.input_folder, 'zed_poses')
+        print(self.pose_path)
         super().__init__(
             config_dict,
             stride=stride,
@@ -826,7 +827,7 @@ class ZedDataset(GradSLAMDataset):
 
     def get_filepaths(self):
         color_paths = natsorted(glob.glob(f"{self.input_folder}/results/frame*.jpg"))
-        depth_paths = natsorted(glob.glob(f"{self.input_folder}/results/depth*.npy"))
+        depth_paths = natsorted(glob.glob(f"{self.input_folder}/results/filt_depth*.npy"))
         embedding_paths = None
         if self.load_embeddings:
             embedding_paths = natsorted(

@@ -26,6 +26,7 @@ from shapely.geometry import MultiPoint
 import open3d as o3d
 from conceptgraph.scripts.visualize_cfslam_results import compute_yaw_aligned_open3d_bbox, create_ball_mesh
 from functools import reduce
+# from arg_py.datastructures import Pose
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -116,20 +117,36 @@ def main(args):
 
     bboxes = []
     
-    # Transform point cloud from image frame to x-forward, y-left, z-up frame
-    transformation_matrix = np.array([[0, 0, 1, 0],
-                                       [-1, 0, 0, 0],
-                                       [0, 1, 0, 0],
-                                       [0, 0, 0, 1]])
+    # # Transform point cloud from image frame to x-forward, y-left, z-up frame
+    # transformation_matrix = np.array([[0, 0, 1, 0],
+    #                                    [-1, 0, 0, 0],
+    #                                    [0, 1, 0, 0],
+    #                                    [0, 0, 0, 1]])
 
-    # Additional transformation to flip y and z
-    flip_yz_matrix = np.array([[1, 0, 0, 0],
-                                [0, -1, 0, 0],
-                                [0, 0, -1, 0],
-                                [0, 0, 0, 1]])
+    # # Additional transformation to flip y and z
+    # flip_yz_matrix = np.array([[1, 0, 0, 0],
+    #                             [0, -1, 0, 0],
+    #                             [0, 0, -1, 0],
+    #                             [0, 0, 0, 1]])
 
-    # Combine the transformations
-    transformation_matrix = np.dot(flip_yz_matrix, transformation_matrix)
+    # # Combine the transformations
+    # transformation_matrix = np.dot(flip_yz_matrix, transformation_matrix)
+
+    # camera_in_base = Pose([-287.473 / 1000, -76.277 / 1000, 0, 0.5, -0.5, -0.5, 0.5])
+    camera_in_base = np.array([
+        [0, 0, -1, -0.287473],
+        [1, 0, 0, -0.076277],
+        [0, -1, 0, 0],
+        [0, 0, 0, 1]
+    ])
+    ptcloud_in_camera_path = "/home/pbrick/dev/data/250814_ECL_200_2_0.01_20_1/zed_poses/frame000000.npy"
+    ptcloud_in_camera = np.load(ptcloud_in_camera_path)
+    base_in_world_path = "/home/pbrick/dev/data/250814_ECL_200_2_0.01_20_1/rob_poses/frame000000.npy"
+    base_in_world = np.load(base_in_world_path)
+    ptcloud_in_world = base_in_world @ camera_in_base @ ptcloud_in_camera
+    transformation_matrix = ptcloud_in_world
+
+
     for i in range(len(objects)):
         pcd = objects[i]['pcd']
 
