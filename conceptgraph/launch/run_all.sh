@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# TODO: set env variable for conceptgraph and/or make it a submodule
 scene_name=250820_ECL_500_2_0.01_20_1
 
 echo "extract_2d_classes"

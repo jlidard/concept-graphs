@@ -1,4 +1,3 @@
-# The ConceptGraphs-Detect
 CLASS_SET=ram
 SCENE_NAME=$1
 

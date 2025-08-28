@@ -10,6 +10,9 @@ manipulation/contact_graspnet/checkpoints
 manipulation/dataset
 env_vars.bash
 
+# vscode
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

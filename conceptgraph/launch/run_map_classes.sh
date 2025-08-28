@@ -26,5 +26,3 @@ python slam/cfslam_pipeline_batch.py \
     vis_render=False\
     debug_render=False \
     save_objects_all_frames=True 
-    # merge_interval=1 \ 
-#    filter_interval=20

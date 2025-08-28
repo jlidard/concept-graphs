@@ -13,5 +13,4 @@ python launch/generate_vertices.py \
 --no_clip \
 --save_partial_pcd_path ${SAVE_PCD_RESULT_PATH} \
 --full_pc_path  ${FULL_PCD_PATH} 
-#--skip_rendering
 
